@@ -1,0 +1,54 @@
+name: Build WazirX Arbitrage V2 APK
+
+on:
+  push:
+    branches: [ wazirx-arb-v2-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct V2 source archive
+        shell: bash
+        run: |
+          cat wazirx-v2-build/part*.b64 | base64 --decode > WazirXArbAndroid-v2-source.zip
+          unzip -t WazirXArbAndroid-v2-source.zip
+          unzip -q WazirXArbAndroid-v2-source.zip
+          test -f WazirXArbAndroid/app/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Build V2 debug APK
+        working-directory: WazirXArbAndroid
+        run: gradle --stacktrace assembleDebug
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          test -s WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          sha256sum WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WazirXArb-V2-debug-apk
+          path: WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
