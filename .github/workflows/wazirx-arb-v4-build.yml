@@ -1,10 +1,92 @@
 name: Build WazirX Arbitrage V4 APK
 
 on:
+  push:
+    branches: [ wazirx-arb-v4-build ]
   workflow_dispatch:
 
 jobs:
-  staging:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - run: echo "V4 source chunks are being staged"
+      - uses: actions/checkout@v4
+      - name: Verify V3 base chunks
+        shell: bash
+        run: |
+          echo "d718b002fdd1b7a14e1685323a3b72a94cd8083d2d7485f4009a9ec82abc1f88  wazirx-v3-build/part00.b64" | sha256sum -c -
+          echo "9ec5f0dce3a5f8371bce21d4ded555ca21c08ebbc92829106fc85ec39901523a  wazirx-v3-build/part01.b64" | sha256sum -c -
+          echo "ca0d395b5533e385a96c9c7d32ad0653bab47f6883a66342221d56622769ce24  wazirx-v3-build/part02a.b64" | sha256sum -c -
+          echo "11b176555f6730fde44d8f35bf613ed8ac24b332afbe25ce594e36954fe5ac8e  wazirx-v3-build/part02b1.b64" | sha256sum -c -
+          echo "c675777d16e2ba4b8c4e56317f3da270ee7e3ff2337cbdd21f34b250a5fcbfb8  wazirx-v3-build/part02b21.b64" | sha256sum -c -
+          echo "6bc06654021b0c07466c5351c11ee612947b598f75eea3572ca1e081bfc90262  wazirx-v3-build/part02b22.b64" | sha256sum -c -
+          echo "cba29eb641672d7dbd686289e451da47d0223841dee99ad20c57449ff852d9fa  wazirx-v3-build/part03.b64" | sha256sum -c -
+          echo "dfdb6f2ed36faab98527482622fb65408b2f4aeda62f1fd448a961406d5b39c2  wazirx-v3-build/part04.b64" | sha256sum -c -
+          echo "042effee7559bcb05daf3bcad9070d7eff8243b347857d6f3eea590891d00d33  wazirx-v3-build/part05.b64" | sha256sum -c -
+          echo "acbf6e612380be362b0e545c33ad827128325bb6df9974419e68c8ab534656bf  wazirx-v3-build/part061.b64" | sha256sum -c -
+          echo "fd5f263adb545530b8ee7fc473c2a180a326153af9ba3d1d027d81c3f386868c  wazirx-v3-build/part062.b64" | sha256sum -c -
+          echo "97da0b1137652d078bcfd629f65f87841efc0585eeef8542b42fe86c11029cc5  wazirx-v3-build/part063.b64" | sha256sum -c -
+      - name: Reconstruct V3 base source
+        shell: bash
+        run: |
+          cat wazirx-v3-build/part00.b64 wazirx-v3-build/part01.b64 wazirx-v3-build/part02a.b64 wazirx-v3-build/part02b1.b64 wazirx-v3-build/part02b21.b64 wazirx-v3-build/part02b22.b64 wazirx-v3-build/part03.b64 wazirx-v3-build/part04.b64 wazirx-v3-build/part05.b64 wazirx-v3-build/part061.b64 wazirx-v3-build/part062.b64 wazirx-v3-build/part063.b64 | base64 --decode > WazirXArbAndroid-v3-source.zip
+          echo "d379f6094d7c79b8f2b4c6a71dd80457d1a393af2db3b800e6b71882d5501c88  WazirXArbAndroid-v3-source.zip" | sha256sum -c -
+          unzip -t WazirXArbAndroid-v3-source.zip
+          unzip -q WazirXArbAndroid-v3-source.zip
+      - name: Verify and reconstruct V4 patch chunks
+        shell: bash
+        run: |
+          echo "a7a9d3a2bb40ec599a2a7225c4e5cc560d4df80ab2f8d7f3cbf48e9eb1bae453  wazirx-v4-build/chunks/patch00.part" | sha256sum -c -
+          echo "2975a67b25cb9620e6b8c7945857a61ff8ea568a7c33db418e7e95cdf973eff2  wazirx-v4-build/chunks/patch01.part" | sha256sum -c -
+          echo "58181d63edef64052577efdd909c7f483a4b08d86d2857a02499a29678af93c9  wazirx-v4-build/chunks/patch02.part" | sha256sum -c -
+          echo "59220c89e8d2697573b461d9a9d8da7cd29dd3a73e34465b82e2e44e2bcf854b  wazirx-v4-build/chunks/patch03.part" | sha256sum -c -
+          echo "97ad712b2d5d2539384ffb7a440db808a45c019b3c73e8552e4848cfaaf86ed9  wazirx-v4-build/chunks/patch04.part" | sha256sum -c -
+          echo "e19fae813b81dab092d6391c9c28259e7b9f3a4e7a75110281562a89020b60dc  wazirx-v4-build/chunks/patch05.part" | sha256sum -c -
+          echo "d0536a265a69f70313aeb196c1a2926ae11148ebd09c304b10c129f2303144c4  wazirx-v4-build/chunks/patch06.part" | sha256sum -c -
+          echo "1a33b772f58a0d5b568a12d77e14858ae8fd99e1fe0cbe710cec363f44183851  wazirx-v4-build/chunks/patch07.part" | sha256sum -c -
+          echo "8554e58edbd55b866f113ef135648dea7837814872d4e991a1e35da540a67715  wazirx-v4-build/chunks/patch08.part" | sha256sum -c -
+          echo "b0208df17d4cc16293f17e58d9055b93654346ae2cef0775e0f67e8be9a2d368  wazirx-v4-build/chunks/patch09.part" | sha256sum -c -
+          echo "cf2be2bd3e69f93feeb4ab194a97eacf3dc6e7cdd598aed53519054875373281  wazirx-v4-build/chunks/patch10.part" | sha256sum -c -
+          echo "5972f5908689da59144adba8d7cbf5515cca4ebf244a2eb56a9cd4283fba1b48  wazirx-v4-build/chunks/patch11.part" | sha256sum -c -
+          echo "7b56d2b84b6a1b19f499f7404d738bd7c7d3fc600db211f1036cb3d9789b4437  wazirx-v4-build/chunks/patch12.part" | sha256sum -c -
+          cat wazirx-v4-build/chunks/patch00.part wazirx-v4-build/chunks/patch01.part wazirx-v4-build/chunks/patch02.part wazirx-v4-build/chunks/patch03.part wazirx-v4-build/chunks/patch04.part wazirx-v4-build/chunks/patch05.part wazirx-v4-build/chunks/patch06.part wazirx-v4-build/chunks/patch07.part wazirx-v4-build/chunks/patch08.part wazirx-v4-build/chunks/patch09.part wazirx-v4-build/chunks/patch10.part wazirx-v4-build/chunks/patch11.part wazirx-v4-build/chunks/patch12.part > /tmp/v4.patch.gz.b64
+          echo "ec63b322894269ed76ce8f62e67b5fcb5e5d30f61476acc57058ddaae0ed7712  /tmp/v4.patch.gz.b64" | sha256sum -c -
+          base64 --decode /tmp/v4.patch.gz.b64 | gzip -dc > /tmp/v4.patch
+          echo "28bb5479825429a62dbe21f1dd31970d9bdc16c9cd4eff49891f42e985f828ed  /tmp/v4.patch" | sha256sum -c -
+      - name: Apply V4 source patch
+        shell: bash
+        run: |
+          cd WazirXArbAndroid
+          patch --batch -p5 < /tmp/v4.patch
+          grep -q "applicationId 'com.vinod.wazirxarb.v4'" app/build.gradle
+          grep -q "versionName '4.0.0'" app/build.gradle
+          grep -q "INVENTORY REVERSE" app/src/main/java/com/vinod/wazirxarb/ArbService.java
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build V4 debug APK
+        working-directory: WazirXArbAndroid
+        run: gradle --stacktrace assembleDebug
+      - name: Verify V4 APK and package
+        shell: bash
+        run: |
+          APK=WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt | head -8
+          grep -q "package: name='com.vinod.wazirxarb.v4'" /tmp/badging.txt
+          sha256sum "$APK"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WazirXArb-V4-debug-apk
+          path: WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
