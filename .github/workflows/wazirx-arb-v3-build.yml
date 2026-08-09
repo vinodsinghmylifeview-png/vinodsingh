@@ -18,15 +18,17 @@ jobs:
           echo "ca0d395b5533e385a96c9c7d32ad0653bab47f6883a66342221d56622769ce24  wazirx-v3-build/part02a.b64" | sha256sum -c -
           echo "11b176555f6730fde44d8f35bf613ed8ac24b332afbe25ce594e36954fe5ac8e  wazirx-v3-build/part02b1.b64" | sha256sum -c -
           echo "c675777d16e2ba4b8c4e56317f3da270ee7e3ff2337cbdd21f34b250a5fcbfb8  wazirx-v3-build/part02b21.b64" | sha256sum -c -
-          echo "a825358ab0e11a783836435990a98c8a91ef6494483468d134819b1122318c99  wazirx-v3-build/part02b22.b64" | sha256sum -c -
+          echo "6bc06654021b0c07466c5351c11ee612947b598f75eea3572ca1e081bfc90262  wazirx-v3-build/part02b22.b64" | sha256sum -c -
           echo "cba29eb641672d7dbd686289e451da47d0223841dee99ad20c57449ff852d9fa  wazirx-v3-build/part03.b64" | sha256sum -c -
           echo "dfdb6f2ed36faab98527482622fb65408b2f4aeda62f1fd448a961406d5b39c2  wazirx-v3-build/part04.b64" | sha256sum -c -
           echo "042effee7559bcb05daf3bcad9070d7eff8243b347857d6f3eea590891d00d33  wazirx-v3-build/part05.b64" | sha256sum -c -
-          echo "bef7d73c47a140ce775bad1b68206fce570e0ff74be1e46a1c98f685655ad602  wazirx-v3-build/part06.b64" | sha256sum -c -
+          echo "acbf6e612380be362b0e545c33ad827128325bb6df9974419e68c8ab534656bf  wazirx-v3-build/part061.b64" | sha256sum -c -
+          echo "fd5f263adb545530b8ee7fc473c2a180a326153af9ba3d1d027d81c3f386868c  wazirx-v3-build/part062.b64" | sha256sum -c -
+          echo "97da0b1137652d078bcfd629f65f87841efc0585eeef8542b42fe86c11029cc5  wazirx-v3-build/part063.b64" | sha256sum -c -
       - name: Reconstruct and unpack V3 source
         shell: bash
         run: |
-          cat wazirx-v3-build/part00.b64 wazirx-v3-build/part01.b64 wazirx-v3-build/part02a.b64 wazirx-v3-build/part02b1.b64 wazirx-v3-build/part02b21.b64 wazirx-v3-build/part02b22.b64 wazirx-v3-build/part03.b64 wazirx-v3-build/part04.b64 wazirx-v3-build/part05.b64 wazirx-v3-build/part06.b64 | base64 --decode > WazirXArbAndroid-v3-source.zip
+          cat wazirx-v3-build/part00.b64 wazirx-v3-build/part01.b64 wazirx-v3-build/part02a.b64 wazirx-v3-build/part02b1.b64 wazirx-v3-build/part02b21.b64 wazirx-v3-build/part02b22.b64 wazirx-v3-build/part03.b64 wazirx-v3-build/part04.b64 wazirx-v3-build/part05.b64 wazirx-v3-build/part061.b64 wazirx-v3-build/part062.b64 wazirx-v3-build/part063.b64 | base64 --decode > WazirXArbAndroid-v3-source.zip
           echo "d379f6094d7c79b8f2b4c6a71dd80457d1a393af2db3b800e6b71882d5501c88  WazirXArbAndroid-v3-source.zip" | sha256sum -c -
           unzip -t WazirXArbAndroid-v3-source.zip
           unzip -q WazirXArbAndroid-v3-source.zip
