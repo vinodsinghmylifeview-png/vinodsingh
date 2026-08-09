@@ -11,21 +11,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Verify source chunk 0
-        run: echo 'd2f0f573a9d81222e85d259901663e04291bb660a96376d5692427a18c9d5540  wazirx-v2-build/part00.b64' | sha256sum -c -
-      - name: Verify source chunk 1
+      - name: Verify source chunk 00a
+        run: echo '519db008655f86242e4d9eb32793183f6268db70add47584eaa9e0f8fe27eefc  wazirx-v2-build/part00a.b64' | sha256sum -c -
+      - name: Verify source chunk 00b
+        run: echo '612c372535d00062e87faf41cba001c6094b942f0bff89df5492d9a5073db0ee  wazirx-v2-build/part00b.b64' | sha256sum -c -
+      - name: Verify source chunk 01
         run: echo '37b8f3b76c04aae61823faa1018ef5c4506ce9ea0383ee5083c203cd59bd54ee  wazirx-v2-build/part01.b64' | sha256sum -c -
-      - name: Verify source chunk 2
+      - name: Verify source chunk 02
         run: echo 'c51ea5fce387c15ea7f00807f43ff91bf1a8985c38a2621ec3f3419c6e7a998e  wazirx-v2-build/part02.b64' | sha256sum -c -
-      - name: Verify source chunk 3
+      - name: Verify source chunk 03
         run: echo '48310140ca21e3804dfde55e424e34af9da702c8f1811933ee3e8917b42629a3  wazirx-v2-build/part03.b64' | sha256sum -c -
-      - name: Verify source chunk 4
+      - name: Verify source chunk 04
         run: echo 'c633ac9b60614ce200724ae1b59f78486885cf95a248302954ccdb8fe53b564d  wazirx-v2-build/part04.b64' | sha256sum -c -
 
       - name: Reconstruct V2 source archive
         shell: bash
         run: |
-          cat wazirx-v2-build/part*.b64 | base64 --decode > WazirXArbAndroid-v2-source.zip
+          cat wazirx-v2-build/part00a.b64 wazirx-v2-build/part00b.b64 wazirx-v2-build/part01.b64 wazirx-v2-build/part02.b64 wazirx-v2-build/part03.b64 wazirx-v2-build/part04.b64 | base64 --decode > WazirXArbAndroid-v2-source.zip
+          echo 'd750dcf33132077f6b84c8db008bb539e6683ce0cdf961f48a8168f81daebd2e  WazirXArbAndroid-v2-source.zip' | sha256sum -c -
           unzip -t WazirXArbAndroid-v2-source.zip
           unzip -q WazirXArbAndroid-v2-source.zip
           test -f WazirXArbAndroid/app/build.gradle
