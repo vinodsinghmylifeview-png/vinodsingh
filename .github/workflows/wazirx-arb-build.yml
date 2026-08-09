@@ -1,0 +1,50 @@
+name: Build WazirX Arbitrage APK
+
+on:
+  push:
+    branches: [ wazirx-arb-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Reconstruct source archive
+        shell: bash
+        run: |
+          cat wazirx-build/part*.b64 | base64 --decode > WazirXArbAndroid-source.zip
+          unzip -q WazirXArbAndroid-source.zip
+          test -f WazirXArbAndroid/app/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Build debug APK
+        working-directory: WazirXArbAndroid
+        run: gradle --stacktrace assembleDebug
+
+      - name: Verify APK
+        shell: bash
+        run: |
+          test -s WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          ls -lh WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WazirXArb-debug-apk
+          path: WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
