@@ -1,0 +1,73 @@
+name: Build WazirX + Binance Arbitrage V5 APK
+
+on:
+  push:
+    branches: [ wazirx-arb-v5-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify V5 source chunks
+        shell: bash
+        run: |
+          echo "dcdc1e66a6b803d221ab1fb1d8dccb2430ca068e44d6a7503bdc172bef7e651c  wazirx-v5-build/part00.b64" | sha256sum -c -
+          echo "570c1a8a194449acaf11dff633d41141abe6c0f96184b9335ce6a39073ede7a7  wazirx-v5-build/part01.b64" | sha256sum -c -
+          echo "78a5e416602540cce8d3a31209de72fa62b3de45a4148df9ea933754faf72dda  wazirx-v5-build/part02.b64" | sha256sum -c -
+          echo "fe900a5cba672c84511ebe11e804adae61a53a63dbfa4792acecabaec357c2ca  wazirx-v5-build/part03.b64" | sha256sum -c -
+          echo "dd113008be2c84ee04da9a685a9145815342eb620f7b80b510ecef66e577b9e8  wazirx-v5-build/part04.b64" | sha256sum -c -
+          echo "f961d6fa928d3096a3d4aad85031414aa0b891f21b927bfa9ed84926d46122c8  wazirx-v5-build/part05.b64" | sha256sum -c -
+          echo "842c524785bc960bd36718e9b4e54ceea86f841dbb670b4b8cdd9362c64c7bfa  wazirx-v5-build/part06.b64" | sha256sum -c -
+          echo "b64cf0b1a22fee0245dcaf7a6c7ce751e1f0e325655f05b2fd1579710f506e0c  wazirx-v5-build/part07.b64" | sha256sum -c -
+          echo "13af388a4025585c018276318ae2d3d1afae1dde32929682bc7ad21b27158bd8  wazirx-v5-build/part08.b64" | sha256sum -c -
+          echo "e16abcbfff7340e771a9f83c7052f0f976a178e021bf431090de2709d80b122e  wazirx-v5-build/part09.b64" | sha256sum -c -
+
+      - name: Reconstruct and verify V5 source
+        shell: bash
+        run: |
+          cat wazirx-v5-build/part00.b64 wazirx-v5-build/part01.b64 wazirx-v5-build/part02.b64 wazirx-v5-build/part03.b64 wazirx-v5-build/part04.b64 wazirx-v5-build/part05.b64 wazirx-v5-build/part06.b64 wazirx-v5-build/part07.b64 wazirx-v5-build/part08.b64 wazirx-v5-build/part09.b64 > /tmp/v5.b64
+          echo "980337dbba3dc250bbdae36278e0817805427a1761a3cd45ddceebfa3011b04b  /tmp/v5.b64" | sha256sum -c -
+          base64 --decode /tmp/v5.b64 > WazirXArbAndroid-v5-source.zip
+          echo "3e2044c40583247c2963090bf8da6ab5403833e7c39deeeaf1086dbd4bfccb38  WazirXArbAndroid-v5-source.zip" | sha256sum -c -
+          unzip -t WazirXArbAndroid-v5-source.zip
+          unzip -q WazirXArbAndroid-v5-source.zip
+          test -f WazirXArbAndroid-v5/app/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+
+      - name: Build V5 debug APK
+        working-directory: WazirXArbAndroid-v5
+        run: gradle --stacktrace assembleDebug
+
+      - name: Verify V5 APK and package
+        shell: bash
+        run: |
+          APK=WazirXArbAndroid-v5/app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging "$APK" | tee /tmp/badging.txt | head -8
+          grep -q "package: name='com.vinod.wazirxarb.v5'" /tmp/badging.txt
+          sha256sum "$APK"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WazirXArb-V5-debug-apk
+          path: WazirXArbAndroid-v5/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
