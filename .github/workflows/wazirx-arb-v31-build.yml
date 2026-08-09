@@ -1,0 +1,141 @@
+name: Build WazirX Arbitrage V3.1 APK
+
+on:
+  push:
+    branches: [ wazirx-arb-v31-build ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify and reconstruct V3 base source
+        shell: bash
+        run: |
+          echo "d718b002fdd1b7a14e1685323a3b72a94cd8083d2d7485f4009a9ec82abc1f88  wazirx-v3-build/part00.b64" | sha256sum -c -
+          echo "9ec5f0dce3a5f8371bce21d4ded555ca21c08ebbc92829106fc85ec39901523a  wazirx-v3-build/part01.b64" | sha256sum -c -
+          echo "ca0d395b5533e385a96c9c7d32ad0653bab47f6883a66342221d56622769ce24  wazirx-v3-build/part02a.b64" | sha256sum -c -
+          echo "11b176555f6730fde44d8f35bf613ed8ac24b332afbe25ce594e36954fe5ac8e  wazirx-v3-build/part02b1.b64" | sha256sum -c -
+          echo "c675777d16e2ba4b8c4e56317f3da270ee7e3ff2337cbdd21f34b250a5fcbfb8  wazirx-v3-build/part02b21.b64" | sha256sum -c -
+          echo "6bc06654021b0c07466c5351c11ee612947b598f75eea3572ca1e081bfc90262  wazirx-v3-build/part02b22.b64" | sha256sum -c -
+          echo "cba29eb641672d7dbd686289e451da47d0223841dee99ad20c57449ff852d9fa  wazirx-v3-build/part03.b64" | sha256sum -c -
+          echo "dfdb6f2ed36faab98527482622fb65408b2f4aeda62f1fd448a961406d5b39c2  wazirx-v3-build/part04.b64" | sha256sum -c -
+          echo "042effee7559bcb05daf3bcad9070d7eff8243b347857d6f3eea590891d00d33  wazirx-v3-build/part05.b64" | sha256sum -c -
+          echo "acbf6e612380be362b0e545c33ad827128325bb6df9974419e68c8ab534656bf  wazirx-v3-build/part061.b64" | sha256sum -c -
+          echo "fd5f263adb545530b8ee7fc473c2a180a326153af9ba3d1d027d81c3f386868c  wazirx-v3-build/part062.b64" | sha256sum -c -
+          echo "97da0b1137652d078bcfd629f65f87841efc0585eeef8542b42fe86c11029cc5  wazirx-v3-build/part063.b64" | sha256sum -c -
+          cat wazirx-v3-build/part00.b64 wazirx-v3-build/part01.b64 wazirx-v3-build/part02a.b64 wazirx-v3-build/part02b1.b64 wazirx-v3-build/part02b21.b64 wazirx-v3-build/part02b22.b64 wazirx-v3-build/part03.b64 wazirx-v3-build/part04.b64 wazirx-v3-build/part05.b64 wazirx-v3-build/part061.b64 wazirx-v3-build/part062.b64 wazirx-v3-build/part063.b64 | base64 --decode > WazirXArbAndroid-v3-source.zip
+          echo "d379f6094d7c79b8f2b4c6a71dd80457d1a393af2db3b800e6b71882d5501c88  WazirXArbAndroid-v3-source.zip" | sha256sum -c -
+          unzip -q WazirXArbAndroid-v3-source.zip
+          test -f WazirXArbAndroid/app/build.gradle
+
+      - name: Patch source to V3.1 observability build
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          root=Path('WazirXArbAndroid')
+          p=root/'app/build.gradle'
+          s=p.read_text()
+          s=s.replace("applicationId 'com.vinod.wazirxarb.v3'","applicationId 'com.vinod.wazirxarb.v31'")
+          s=s.replace("versionCode 3","versionCode 31")
+          s=s.replace("versionName '3.0.0'","versionName '3.1.0'")
+          p.write_text(s)
+
+          p=root/'app/src/main/AndroidManifest.xml'
+          p.write_text(p.read_text().replace('WazirX Arb V3','WazirX Arb V3.1'))
+
+          p=root/'app/src/main/res/layout/activity_main.xml'
+          s=p.read_text()
+          s=s.replace('WazirX Futures Arbitrage V3','WazirX Futures Arbitrage V3.1')
+          s=s.replace('Start V3 to scan positive cash-and-carry candidates…','Start V3.1 to scan cash-and-carry candidates…')
+          s=s.replace('android:text="START V3"','android:text="START V3.1"')
+          s=s.replace('Entry: V3 requires positive VWAP basis','Entry: V3.1 requires positive VWAP basis')
+          s=s.replace('V3 excludes negative-basis/wide-spread pairs','V3.1 displays rejected pairs for visibility, but still excludes negative-basis/wide-spread pairs')
+          needle='''        <LinearLayout style="@style/Panel">\n            <TextView style="@style/SectionTitle" android:text="Top Opportunities" />\n            <TextView android:id="@+id/opportunities" style="@style/MonoText" android:text="Start V3.1 to scan cash-and-carry candidates…" />\n        </LinearLayout>\n'''
+          insert='''        <LinearLayout style="@style/Panel">\n            <TextView style="@style/SectionTitle" android:text="Scanner Heartbeat" />\n            <TextView android:id="@+id/heartbeat" style="@style/MonoText" android:text="Scanner not started yet." />\n        </LinearLayout>\n\n'''
+          if needle not in s: raise SystemExit('layout patch point not found')
+          s=s.replace(needle, needle+insert)
+          p.write_text(s)
+
+          p=root/'app/src/main/java/com/vinod/wazirxarb/MainActivity.java'
+          s=p.read_text()
+          s=s.replace('private TextView apiSavedStatus, status, opportunities, market, pnl, history, log;', 'private TextView apiSavedStatus, status, opportunities, heartbeat, market, pnl, history, log;')
+          s=s.replace('else if ("opportunities".equals(type)) opportunities.setText(text);', 'else if ("opportunities".equals(type)) opportunities.setText(text);\n            else if ("heartbeat".equals(type)) heartbeat.setText(text);')
+          s=s.replace('opportunities = findViewById(R.id.opportunities);', 'opportunities = findViewById(R.id.opportunities);\n        heartbeat = findViewById(R.id.heartbeat);')
+          s=s.replace('"Starting LIVE" : "Starting PAPER") + " V3 • "', '"Starting LIVE" : "Starting PAPER") + " V3.1 • "')
+          s=s.replace('"V3 liquidity filters are invalid."', '"V3.1 liquidity filters are invalid."')
+          s=s.replace('V3 will attempt a safe unwind', 'V3.1 will attempt a safe unwind')
+          s=s.replace('V3 requires executable depth, balance/margin checks and consecutive confirmations', 'V3.1 requires executable depth, balance/margin checks and consecutive confirmations')
+          p.write_text(s)
+
+          p=root/'app/src/main/java/com/vinod/wazirxarb/BotConfig.java'
+          p.write_text(p.read_text().replace('bot_config_v3','bot_config_v31'))
+
+          p=root/'app/src/main/java/com/vinod/wazirxarb/ArbService.java'
+          s=p.read_text()
+          s=s.replace('private static final String CHANNEL = "arb_bot_v3";', 'private static final String CHANNEL = "arb_bot_v31";')
+          s=s.replace('private int confirmationCount = 0;', 'private int confirmationCount = 0;\n    private long scanCount = 0;\n    private long lastHeartbeatLogAt = 0;')
+          s=s.replace('"WazirX-Arb-V3"', '"WazirX-Arb-V31"')
+          s=s.replace('"Starting WazirX V3 scanner…"', '"Starting WazirX V3.1 scanner…"')
+          s=s.replace('"V3 auto-scan loaded "', '"V3.1 auto-scan loaded "')
+          s=s.replace('"LIVE V3 bot running"', '"LIVE V3.1 bot running"')
+          s=s.replace('"PAPER V3 scanner running"', '"PAPER V3.1 scanner running"')
+          old='''            while (running) {\n                try {\n                    if (emergencyRequested) {'''
+          new='''            while (running) {\n                try {\n                    scanCount++;\n                    if (emergencyRequested) {'''
+          if old not in s: raise SystemExit('loop patch point not found')
+          s=s.replace(old,new)
+
+          old='''            Candidate c = evaluateCandidate(cfg, s);\n            send("opportunities", "Selected pair mode\\n" + cfg.symbol + " is checked using executable VWAP depth for the configured capital.");\n            return c;'''
+          new='''            Candidate c = evaluateCandidate(cfg, s);\n            send("opportunities", "Selected pair mode\\n" + cfg.symbol + " is checked using executable VWAP depth for the configured capital.");\n            send("heartbeat", String.format(Locale.US, "SCANNER ALIVE • scan #%d • %s\\nManual pair: %s • next scan continues automatically", scanCount, nowClock(), cfg.symbol));\n            maybeHeartbeatLog("manual " + cfg.symbol);\n            return c;'''
+          if old not in s: raise SystemExit('manual patch point not found')
+          s=s.replace(old,new)
+
+          old='''        List<WazirxClient.Opportunity> raw = api.indicativeOpportunities(symbols, 20);\n        java.util.ArrayList<WazirxClient.Opportunity> filtered = new java.util.ArrayList<>();\n        for (WazirxClient.Opportunity o : raw) {\n            if (o.indicativeBasisBps() <= 0) continue;\n            if (o.spotSpreadBps() > cfg.maxSpotSpreadBps) continue;\n            filtered.add(o);\n            if (filtered.size() >= 8) break;\n        }\n        send("opportunities", formatOpportunities(filtered, cfg));\n        if (filtered.isEmpty()) return null;\n'''
+          new='''        List<WazirxClient.Opportunity> raw = api.indicativeOpportunities(symbols, 20);\n        java.util.ArrayList<WazirxClient.Opportunity> filtered = new java.util.ArrayList<>();\n        for (WazirxClient.Opportunity o : raw) {\n            if (o.indicativeBasisBps() <= 0) continue;\n            if (o.spotSpreadBps() > cfg.maxSpotSpreadBps) continue;\n            filtered.add(o);\n            if (filtered.size() >= 8) break;\n        }\n        send("opportunities", formatRawOpportunities(raw, filtered.size(), cfg));\n        sendHeartbeat(raw, filtered.size(), cfg);\n        if (filtered.isEmpty()) return null;\n'''
+          if old not in s: raise SystemExit('auto scan patch point not found')
+          s=s.replace(old,new)
+
+          start=s.index('    private String formatOpportunities(')
+          end=s.index('    private void renderMarket(', start)
+          replacement='''    private String formatRawOpportunities(List<WazirxClient.Opportunity> raw, int passed, BotConfig cfg) {\n        if (raw == null || raw.isEmpty()) return "No market data returned on scan #" + scanCount + ".";\n        StringBuilder b = new StringBuilder();\n        b.append(String.format(Locale.US, "Scan #%d @ %s • top raw candidates before strict entry filter\\n", scanCount, nowClock()));\n        int rank = 1;\n        for (WazirxClient.Opportunity o : raw) {\n            double basis = o.indicativeBasisBps();\n            double spread = o.spotSpreadBps();\n            String reason;\n            if (basis <= 0) reason = "REJECT negative basis";\n            else if (spread > cfg.maxSpotSpreadBps) reason = String.format(Locale.US, "REJECT spread>%.0f", cfg.maxSpotSpreadBps);\n            else reason = "VERIFY VWAP depth";\n            b.append(String.format(Locale.US, "%d. %-10s basis %+.1f bps | spread %.1f | %s\\n", rank++, o.symbol, basis, spread, reason));\n            if (rank > 5) break;\n        }\n        b.append(String.format(Locale.US, "Passed pre-filter: %d • Requested capital: ₹%.0f\\n", passed, cfg.tradeInr));\n        b.append("A trade occurs only after executable spot BUY + futures SHORT VWAP still clears the configured net-edge and liquidity gates.");\n        return b.toString();\n    }\n\n    private void sendHeartbeat(List<WazirxClient.Opportunity> raw, int passed, BotConfig cfg) {\n        String top = "none";\n        if (raw != null && !raw.isEmpty()) {\n            WazirxClient.Opportunity o = raw.get(0);\n            top = String.format(Locale.US, "%s %+.1f bps, spot spread %.1f bps", o.symbol, o.indicativeBasisBps(), o.spotSpreadBps());\n        }\n        send("heartbeat", String.format(Locale.US,\n                "SCANNER ALIVE • scan #%d • %s\\nPairs: auto %s • positive pre-filter: %d • top raw: %s",\n                scanCount, nowClock(), cfg.autoScan ? "ON" : "OFF", passed, top));\n        maybeHeartbeatLog(String.format(Locale.US, "top raw %s • pre-filter pass %d", top, passed));\n    }\n\n    private void maybeHeartbeatLog(String detail) {\n        long now = System.currentTimeMillis();\n        if (now - lastHeartbeatLogAt >= 60000L) {\n            lastHeartbeatLogAt = now;\n            send("log", String.format(Locale.US, "Heartbeat scan #%d @ %s • %s", scanCount, nowClock(), detail));\n        }\n    }\n\n    private String nowClock() {\n        return new java.text.SimpleDateFormat("HH:mm:ss", Locale.US).format(new java.util.Date());\n    }\n\n'''
+          s=s[:start]+replacement+s[end:]
+          s=s.replace('"WazirX Arb V3"', '"WazirX Arb V3.1"')
+          p.write_text(s)
+          PY
+          grep -q "applicationId 'com.vinod.wazirxarb.v31'" WazirXArbAndroid/app/build.gradle
+          grep -q "Scanner Heartbeat" WazirXArbAndroid/app/src/main/res/layout/activity_main.xml
+          grep -q "formatRawOpportunities" WazirXArbAndroid/app/src/main/java/com/vinod/wazirxarb/ArbService.java
+          grep -q "versionName '3.1.0'" WazirXArbAndroid/app/build.gradle
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: Ensure Android SDK 35
+        shell: bash
+        run: |
+          SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKMANAGER" --licenses >/dev/null || true
+          "$SDKMANAGER" 'platforms;android-35' 'build-tools;35.0.0'
+      - name: Build V3.1 debug APK
+        working-directory: WazirXArbAndroid
+        run: gradle --stacktrace assembleDebug
+      - name: Verify APK and package
+        shell: bash
+        run: |
+          test -s WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/apksigner" verify --verbose WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk | head -5
+          "$ANDROID_HOME/build-tools/35.0.0/aapt" dump badging WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk | grep -q "package: name='com.vinod.wazirxarb.v31'"
+          sha256sum WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          zip -qr WazirXArbAndroid-v31-source.zip WazirXArbAndroid
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WazirXArb-V31-debug-apk
+          path: WazirXArbAndroid/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
