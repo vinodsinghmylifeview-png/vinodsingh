@@ -1,1 +1,2 @@
 Binance V6.3 Android build staging branch.
+Trigger build after workflow registration.
