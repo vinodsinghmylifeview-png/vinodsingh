@@ -30,7 +30,7 @@ jobs:
 
       - name: Restore V6.3 source archive
         run: |
-          cat buildparts/v63chunk_00 buildparts/v63chunk_01 buildparts/v63chunk_02 buildparts/v63chunk_03 buildparts/v63chunk_04 > BinanceArbAndroid-v63-source.zip
+          cat buildparts/v63chunk_00 buildparts/v63chunk_01 buildparts/v63chunk_02part_0 buildparts/v63chunk_02s_00 buildparts/v63chunk_02s_01 buildparts/v63chunk_02s_02 buildparts/v63chunk_02s_03 buildparts/v63chunk_02s_04 buildparts/v63chunk_02s_05 buildparts/v63chunk_02s_06 buildparts/v63chunk_02s_07 buildparts/v63chunk_02s_08 buildparts/v63chunk_03 buildparts/v63chunk_04 > BinanceArbAndroid-v63-source.zip
           sha256sum BinanceArbAndroid-v63-source.zip
           test "$(sha256sum BinanceArbAndroid-v63-source.zip | awk '{print $1}')" = "0df2539822d7692b5049ceaf89b94a22d73a61384c895d5aca97195e8fc43b2e"
 
