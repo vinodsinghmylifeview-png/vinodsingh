@@ -1,0 +1,70 @@
+name: Build Binance V6.6 APK
+
+on:
+  push:
+    branches:
+      - binance-v66-ui-build-20260811
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore V6.5 source
+        run: |
+          cat v65src/part_00.b64 v65src/part_0102.b64 v65src/part_03.b64 v65src/part_04.b64 v65src/part_05.b64 v65src/part_06.b64 v65src/part_07.b64 v65src/part_08.b64 > v65src/source.b64
+          base64 -d v65src/source.b64 > BinanceArbAndroid-v65-source.zip
+          sha256sum BinanceArbAndroid-v65-source.zip
+          test "$(sha256sum BinanceArbAndroid-v65-source.zip | awk '{print $1}')" = "2b4ba799cee5f2fa0cfbecdbf9bf2c805805a236f9a60a270a049ee81ef3d8e1"
+          unzip -q BinanceArbAndroid-v65-source.zip
+          mv BinanceArbAndroid-v65 BinanceArbAndroid-v66
+
+      - name: Apply V6.6 UI refinement
+        run: |
+          find BinanceArbAndroid-v66 -type f \( -name '*.java' -o -name '*.xml' -o -name '*.gradle' -o -name '*.md' -o -name '*.txt' -o -name '*.yml' \) -print0 | xargs -0 sed -i \
+            -e 's/V6\.5/V6.6/g' \
+            -e 's/v6\.5/v6.6/g' \
+            -e 's/V65/V66/g' \
+            -e 's/v65/v66/g'
+          sed -i 's/versionCode 65/versionCode 66/' BinanceArbAndroid-v66/app/build.gradle
+          sed -i "s/versionName '6.5.0'/versionName '6.6.0'/" BinanceArbAndroid-v66/app/build.gradle
+          cat v66overrides/MainActivity.part0 v66overrides/MainActivity.part1 | base64 -d | gunzip > BinanceArbAndroid-v66/app/src/main/java/com/vinod/binancearb/MainActivity.java
+          base64 -d v66overrides/activity_main.xml.gz.b64 | gunzip > BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
+          base64 -d v66overrides/styles.xml.gz.b64 | gunzip > BinanceArbAndroid-v66/app/src/main/res/values/styles.xml
+          grep -q "versionCode 66" BinanceArbAndroid-v66/app/build.gradle
+          grep -q "versionName '6.6.0'" BinanceArbAndroid-v66/app/build.gradle
+          grep -q 'android:text="Home"' BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
+          grep -q 'android:text="Trade"' BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
+          grep -q 'android:text="Stats"' BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
+          grep -q 'android:text="Setup"' BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
+
+      - name: Build debug APK
+        working-directory: BinanceArbAndroid-v66
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Verify APK
+        run: |
+          test -f BinanceArbAndroid-v66/app/build/outputs/apk/debug/app-debug.apk
+          cp BinanceArbAndroid-v66/app/build/outputs/apk/debug/app-debug.apk Binance-Arbitrage-V6.6-debug.apk
+          sha256sum Binance-Arbitrage-V6.6-debug.apk
+          unzip -t Binance-Arbitrage-V6.6-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Binance-Arbitrage-V6.6-debug
+          path: Binance-Arbitrage-V6.6-debug.apk
+          retention-days: 7
