@@ -1,0 +1,52 @@
+name: Build Binance V6.5 APK
+
+on:
+  push:
+    branches:
+      - binance-v65-ui-build-20260811
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Restore V6.5 source archive
+        run: |
+          cat v65src/part_00.b64 v65src/part_0102.b64 v65src/part_03.b64 v65src/part_04.b64 v65src/part_05.b64 v65src/part_06.b64 v65src/part_07.b64 v65src/part_08.b64 > v65src/source.b64
+          base64 -d v65src/source.b64 > BinanceArbAndroid-v65-source.zip
+          sha256sum BinanceArbAndroid-v65-source.zip
+          test "$(sha256sum BinanceArbAndroid-v65-source.zip | awk '{print $1}')" = "2b4ba799cee5f2fa0cfbecdbf9bf2c805805a236f9a60a270a049ee81ef3d8e1"
+
+      - name: Unpack source
+        run: unzip -q BinanceArbAndroid-v65-source.zip
+
+      - name: Build debug APK
+        working-directory: BinanceArbAndroid-v65
+        run: gradle :app:assembleDebug --no-daemon
+
+      - name: Verify APK
+        run: |
+          test -f BinanceArbAndroid-v65/app/build/outputs/apk/debug/app-debug.apk
+          cp BinanceArbAndroid-v65/app/build/outputs/apk/debug/app-debug.apk Binance-Arbitrage-V6.5-debug.apk
+          sha256sum Binance-Arbitrage-V6.5-debug.apk
+          unzip -t Binance-Arbitrage-V6.5-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Binance-Arbitrage-V6.5-debug
+          path: Binance-Arbitrage-V6.5-debug.apk
+          retention-days: 7
