@@ -44,6 +44,21 @@ jobs:
           cat v66overrides/MainActivity.part0 v66overrides/MainActivity.part1 | base64 -d | gunzip > BinanceArbAndroid-v66/app/src/main/java/com/vinod/binancearb/MainActivity.java
           base64 -d v66overrides/activity_main.xml.gz.b64 | gunzip > BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
           base64 -d v66overrides/styles.xml.gz.b64 | gunzip > BinanceArbAndroid-v66/app/src/main/res/values/styles.xml
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('BinanceArbAndroid-v66/app/src/main/java/com/vinod/binancearb/MainActivity.java')
+          lines = p.read_text().splitlines()
+          fixed = r'        Pattern p = Pattern.compile("^\\s*\\d+\\.\\s*([A-Z0-9]+)\\s+CASH\\s+([+-]?\\d+(?:\\.\\d+)?)\\s*\\|\\s*REV\\s+([+-]?\\d+(?:\\.\\d+)?)\\s*\\|\\s*spr\\s+([^|]+)\\|\\s*vol\\s+([^|]+)\\|\\s*fund\\s+([^|]+?)(?:\\s*\\|\\s*(.*))?$", Pattern.CASE_INSENSITIVE);'
+          found = False
+          for i, line in enumerate(lines):
+              if 'Pattern p = Pattern.compile' in line:
+                  lines[i] = fixed
+                  found = True
+                  break
+          if not found:
+              raise SystemExit('compact opportunities regex line not found')
+          p.write_text('\n'.join(lines) + '\n')
+          PY
           grep -q "versionCode 66" BinanceArbAndroid-v66/app/build.gradle
           grep -q "versionName '6.6.0'" BinanceArbAndroid-v66/app/build.gradle
           grep -q 'android:text="Home"' BinanceArbAndroid-v66/app/src/main/res/layout/activity_main.xml
